@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ROBDOE SOVEREIGN ACOUSTIC & TRI-TOKEN COCKPIT</title>
+  <style>
+    body { background: #070b12; color: #e2e8f0; font-family: 'Consolas', 'Segoe UI', monospace; padding: 1.5rem; max-width: 1020px; margin: auto; }
+    h1 { color: #38bdf8; border-bottom: 1px solid #1e293b; padding-bottom: 0.5rem; font-size: 1.35rem; letter-spacing: 1px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; margin: 1rem 0; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; }
+    .label { color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
+    .val { font-size: 1.25rem; font-weight: bold; color: #4ade80; margin-top: 0.35rem; }
+    .mono { font-size: 0.8rem; color: #cbd5e1; word-break: break-all; margin-top: 0.35rem; }
+    .controls { display: flex; gap: 0.75rem; margin: 1rem 0; flex-wrap: wrap; }
+    button { background: #0284c7; color: #fff; border: none; padding: 0.65rem 1.1rem; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: inherit; }
+    button:hover { background: #0369a1; }
+    button.acoustic { background: #16a34a; }
+    button.acoustic:hover { background: #15803d; }
+    canvas { width: 100%; height: 90px; background: #020617; border: 1px solid #1e293b; border-radius: 6px; margin-top: 0.5rem; }
+    .match { color: #4ade80; font-weight: bold; }
+    .warn { color: #f87171; font-weight: bold; }
+    .wait { color: #facc15; }
+  </style>
+</head>
+<body>
+  <h1>ROBDOE SOVEREIGN ECOSYSTEM & ACOUSTIC FSK MODEM (CHAIN 31337)</h1>
+
+  <div class="controls">
+    <button onclick="refreshChain()">Sync Live Anvil Chain</button>
+    <button class="acoustic" onclick="startMicDecoder()">Start Acoustic Mic Decoder (1200/2200Hz)</button>
+    <button onclick="decodeWavFile()">Decode .WAV File</button>
+    <input type="file" id="wavPicker" accept=".wav" style="display:none" onchange="handleWavUpload(event)">
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">EVM Block & Pulses</div><div class="val" id="blkVal">-</div><div class="mono" id="pulseVal">Pulses: -</div></div>
+    <div class="card"><div class="label">ERC-20 Utility (SOV)</div><div class="val" id="sovVal">-</div><div class="mono">0xB7f8...4F5e</div></div>
+    <div class="card"><div class="label">ERC-721 Domains / RDN</div><div class="val" id="nftVal">-</div><div class="mono">V1 + Collectible</div></div>
+    <div class="card"><div class="label">Archives / ERC-1155</div><div class="val" id="arcVal">-</div><div class="mono">0xCD8a...3042</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="label">On-Chain Equilibrium Seal (z = z² + c | Wushu & Tai Chi)</div>
+    <div class="mono" style="color:#38bdf8; font-size:0.95rem;" id="onChainSeal">Loading...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Acoustic Air-Gap Demodulator (528Hz Sync -> 256-Bit Bell 202 FSK)</div>
+    <div class="mono wait" id="rxStatus">Idle — Click "Start Acoustic Mic Decoder" or "Decode .WAV File"</div>
+    <div class="mono" style="color:#4ade80; font-size:0.95rem; margin-top:0.5rem;" id="decodedHex">Decoded Seal: [waiting for audio frame]</div>
+    <canvas id="scope" width="960" height="90"></canvas>
+  </div>
+
+  <script>
+    const RPC = "http://127.0.0.1:8545";
+    const OWNER_PAD = "000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266";
+    let expectedSeal = "";
+
+    async function rpc(method, params) {
+      const r = await fetch(RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", method, params, id: 1 })
+      });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error.message);
+      return j.result;
+    }
+
+    async function refreshChain() {
+      try {
+        const [blk, seal, pulses, r20, r721, rRdn, rArc] = await Promise.all([
+          rpc("eth_blockNumber", []),
+          rpc("eth_call", [{ to: "0x172076E0166D1F9Cc711C77Adf8488051744980C", data: "0x2b29c264" }, "latest"]),
+          rpc("eth_call", [{ to: "0x172076E0166D1F9Cc711C77Adf8488051744980C", data: "0x597e1fb5" }, "latest"]),
+          rpc("eth_call", [{ to: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e", data: "0x70a08231" + OWNER_PAD }, "latest"]),
+          rpc("eth_call", [{ to: "0x0165878A594ca255338adfa4d48449f69242Eb8F", data: "0x70a08231" + OWNER_PAD }, "latest"]),
+          rpc("eth_call", [{ to: "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6", data: "0x18160ddd" }, "latest"]),
+          rpc("eth_call", [{ to: "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90", data: "0x883b8c9d" }, "latest"])
+        ]);
+        expectedSeal = String(seal).toLowerCase();
+        document.getElementById("blkVal").textContent = "#" + parseInt(blk, 16);
+        document.getElementById("pulseVal").textContent = "Harmonic Pulses: " + parseInt(pulses, 16);
+        document.getElementById("sovVal").textContent = (BigInt(r20) / (10n ** 18n)).toLocaleString() + " SOV";
+        document.getElementById("nftVal").textContent = parseInt(r721, 16) + " Deeds / " + parseInt(rRdn, 16) + " RDN";
+        document.getElementById("arcVal").textContent = parseInt(rArc, 16) + " Sealed";
+        document.getElementById("onChainSeal").textContent = expectedSeal;
+      } catch (e) {
+        document.getElementById("onChainSeal").textContent = "RPC Offline: " + e.message;
+      }
+    }
+
+    function goertzel(samples, start, len, freq, sr) {
+      const k = Math.round((len * freq) / sr);
+      const w = (2 * Math.PI * k) / len;
+      const cos = Math.cos(w), coeff = 2 * cos;
+      let q0 = 0, q1 = 0, q2 = 0;
+      for (let i = 0; i < len; i++) {
+        q0 = coeff * q1 - q2 + (samples[start + i] || 0);
+        q2 = q1;
+        q1 = q0;
+      }
+      return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - q1 * q2 * coeff));
+    }
+
+    function decodePcmBuffer(samples, sr, bitMs = 20) {
+      const bitLen = Math.max(1, Math.round(sr * (bitMs / 1000)));
+      const win = Math.max(1, Math.round(sr * 0.040));
+      const step = Math.max(1, Math.floor(win / 4));
+      let syncStart = -1;
+      let syncEnd = -1;
+
+      for (let i = 0; i <= samples.length - win; i += step) {
+        const p528 = goertzel(samples, i, win, 528, sr);
+        const p1200 = goertzel(samples, i, win, 1200, sr);
+        if (p528 > 4 && p528 > p1200 * 2.0) {
+          if (syncStart < 0) syncStart = i;
+          syncEnd = i + win;
+        } else if (syncEnd > 0 && (i - syncEnd) > Math.round(sr * 0.030)) {
+          break;
+        }
+      }
+
+      if (syncEnd < 0) return null;
+
+      // 528Hz tone ends ~40ms before payload after guard silence; allow small sweep tolerance
+      let cursor = syncEnd + Math.round(sr * 0.035);
+      let bits = "";
+      for (let b = 0; b < 256; b++) {
+        if (cursor + bitLen > samples.length) break;
+        const p0 = goertzel(samples, cursor, bitLen, 1200, sr);
+        const p1 = goertzel(samples, cursor, bitLen, 2200, sr);
+        bits += (p1 > p0) ? "1" : "0";
+        cursor += bitLen;
+      }
+
+      if (bits.length < 256) return null;
+
+      let hex = "0x";
+      for (let i = 0; i < 256; i += 4) {
+        hex += parseInt(bits.slice(i, i + 4), 2).toString(16);
+      }
+      return hex.toLowerCase();
+    }
+
+    function decodeWavFile() {
+      document.getElementById("wavPicker").click();
+    }
+
+    async function handleWavUpload(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      const st = document.getElementById("rxStatus");
+      try {
+        const buf = await file.arrayBuffer();
+        const ctx = new AudioContext();
+        const audio = await ctx.decodeAudioData(buf);
+        const hex = decodePcmBuffer(audio.getChannelData(0), audio.sampleRate);
+        await ctx.close();
+        if (hex) {
+          const verified = Boolean(expectedSeal && hex === expectedSeal);
+          st.className = verified ? "mono match" : "mono wait";
+          st.textContent = verified
+            ? "VERIFIED MATCH AGAINST LIVE ANVIL CONTRACT!"
+            : "DECODED 256-BIT ACOUSTIC FRAME (.WAV)";
+          document.getElementById("decodedHex").textContent = "Decoded Seal: " + hex;
+        } else {
+          st.className = "mono warn";
+          st.textContent = "No complete 528Hz sync + 256-bit FSK frame detected in WAV file.";
+        }
+      } catch (err) {
+        st.className = "mono warn";
+        st.textContent = "WAV Decode Error: " + err.message;
+      }
+      ev.target.value = "";
+    }
+
+    async function startMicDecoder() {
+      const st = document.getElementById("rxStatus");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        });
+        const ctx = new AudioContext();
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        src.connect(analyser);
+
+        st.className = "mono wait";
+        st.textContent = "Listening on Microphone (432/528Hz Sync + 1200/2200Hz FSK)... Run .\\Invoke-AcousticSealBroadcast.ps1 now!";
+
+        const canvas = document.getElementById("scope");
+        const g = canvas.getContext("2d");
+        const td = new Float32Array(analyser.fftSize);
+        let ring = [];
+        let capturing = false;
+
+        setInterval(() => {
+          analyser.getFloatTimeDomainData(td);
+          g.fillStyle = "#020617";
+          g.fillRect(0, 0, canvas.width, canvas.height);
+          g.strokeStyle = "#38bdf8";
+          g.beginPath();
+          for (let i = 0; i < td.length; i += 2) {
+            const x = (i / td.length) * canvas.width;
+            const y = (0.5 + td[i] * 0.45) * canvas.height;
+            if (i === 0) g.moveTo(x, y);
+            else g.lineTo(x, y);
+          }
+          g.stroke();
+
+          const p528 = goertzel(td, 0, td.length, 528, ctx.sampleRate);
+          if (!capturing && p528 > 4) {
+            capturing = true;
+            ring = Array.from(td);
+            st.className = "mono wait";
+            st.textContent = "528Hz Sync Locked — Capturing 256-bit FSK Frame...";
+          } else if (capturing) {
+            ring.push(...td);
+            if (ring.length >= ctx.sampleRate * 6.0) {
+              capturing = false;
+              const hex = decodePcmBuffer(Float32Array.from(ring), ctx.sampleRate);
+              ring = [];
+              if (hex) {
+                const ok = Boolean(expectedSeal && hex === expectedSeal);
+                st.className = "mono match";
+                st.textContent = ok
+                  ? "AIR-GAP VERIFIED: 100% MATCH WITH ON-CHAIN SEAL!"
+                  : "ACOUSTIC FRAME DECODED";
+                document.getElementById("decodedHex").textContent = "Decoded Seal: " + hex;
+              } else {
+                st.className = "mono wait";
+                st.textContent = "Listening on Microphone...";
+              }
+            }
+          }
+        }, 40);
+      } catch (e) {
+        st.className = "mono warn";
+        st.textContent = "Mic Error: " + e.message;
+      }
+    }
+
+    refreshChain();
+  </script>
+</body>
+</html>

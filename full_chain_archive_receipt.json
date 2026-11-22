@@ -1,0 +1,51 @@
+{
+    "timestamp_utc":  "2026-11-21T23:59:03.957Z",
+    "chain_id":  31337,
+    "full_archive_contract":  "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90",
+    "total_archives_stored":  "7",
+    "global_master_root":  "0x1d98b5ba5dbf2d70afc2036f665d42b76af66771b20db27928c258b0eb9a344a",
+    "archives":  [
+                     {
+                         "Label":  "GenesisMint",
+                         "Root":  "0xe3f6cceaac1324e280181905ca358d9c69f9430ca78c43732656575748cb0533",
+                         "Files":  14,
+                         "Id":  101
+                     },
+                     {
+                         "Label":  "bitcoin-erc721",
+                         "Root":  "0x8f4b7b17177335a4aa153a4892d51505ec6b2a8bbceaaa8f066361d39950af04",
+                         "Files":  3116,
+                         "Id":  102
+                     },
+                     {
+                         "Label":  "erc721-infra",
+                         "Root":  "0x9ea572cdc1678c169defa4e626d5dfbb50a96eca59df0a61eba814cfc56604ac",
+                         "Files":  4,
+                         "Id":  103
+                     },
+                     {
+                         "Label":  "robdoe-Inc-Charity",
+                         "Root":  "0x45d28d51ff15fd1e300d4f5f973aa4122b1c29d7dd30570d1b7f13f30aa645b9",
+                         "Files":  227,
+                         "Id":  104
+                     },
+                     {
+                         "Label":  "atmospheric-truth-layer",
+                         "Root":  "0x8918efe2af61a562b64ec0f23013400d9597c6be6803585202c5de0e92cdaffb",
+                         "Files":  8192,
+                         "Id":  105
+                     },
+                     {
+                         "Label":  "EnerGi",
+                         "Root":  "0x42a260d223376f3740ca606788e76c8ad459885b93e9dcb016fcc29fad237700",
+                         "Files":  72,
+                         "Id":  106
+                     },
+                     {
+                         "Label":  "ROBDOE-INC-NPP-SEAL",
+                         "Root":  "0x7270e691ee7623d49aa60eabf4c6ab8d7331801bf00000000000000093280872",
+                         "Files":  6,
+                         "Id":  107
+                     }
+                 ]
+}
