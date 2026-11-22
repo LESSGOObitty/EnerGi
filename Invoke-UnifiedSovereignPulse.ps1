@@ -39,7 +39,7 @@ foreach ($addr in @(
 
 Write-Host "[ON-CHAIN] Pulse #$pulses Sealed & Synced | Seal: $seal" -ForegroundColor Green
 
-# 3. Optional Serial UART Dispatch (COM5) if hardware port is attached
+# 3. Non-blocking Serial UART Dispatch (COM5)
 if ([System.IO.Ports.SerialPort]::GetPortNames() -contains $SerialPort) {
     $sp = New-Object System.IO.Ports.SerialPort $SerialPort, $BaudRate, ([System.IO.Ports.Parity]::None), 8, ([System.IO.Ports.StopBits]::One)
     try {
@@ -48,15 +48,16 @@ if ([System.IO.Ports.SerialPort]::GetPortNames() -contains $SerialPort) {
         $sp.Write($frame)
         Write-Host "[SERIAL TX -> $SerialPort @ $BaudRate] Dispatched telemetry frame." -ForegroundColor Cyan
     }
+    catch {
+        Write-Host "[SERIAL WARN] $SerialPort busy ($($_.Exception.Message)); continuing to acoustic broadcast." -ForegroundColor Yellow
+    }
     finally {
         if ($sp.IsOpen) { $sp.Close() }
         $sp.Dispose()
     }
-} else {
-    Write-Host "[SERIAL] $SerialPort not currently attached; skipping UART dispatch." -ForegroundColor DarkGray
 }
 
-# 4. Optional 256-Bit Bell 202 Acoustic FSK Broadcast
+# 4. 256-Bit Bell 202 Acoustic FSK Broadcast
 if ($EnableAcoustic -and (Test-Path "C:\bitcoin-erc721\Invoke-AcousticSealBroadcast.ps1")) {
     & "C:\bitcoin-erc721\Invoke-AcousticSealBroadcast.ps1" -Rpc $RpcUrl -EqContract $eqAddr
 }
